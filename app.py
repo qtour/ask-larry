@@ -1,10 +1,9 @@
 from flask import Flask, request, jsonify, send_file
-import openai
 import os
+from openai import OpenAI
 
 app = Flask(__name__)
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/")
 def home():
@@ -23,12 +22,14 @@ Keep answers short, visual if needed, and tied to practical, on-the-job scenario
 Here's the question: {question}
 """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are Ask Larry, a helpful maths tutor for apprentices."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    return jsonify({"reply": response["choices"][0]["message"]["content"]})
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are Ask Larry, a helpful maths tutor for apprentices."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return jsonify({"reply": response.choices[0].message.content})
+    except Exception as e:
+        return jsonify({"reply": f"Oops! Larry ran into a problem: {str(e)}"}), 500
