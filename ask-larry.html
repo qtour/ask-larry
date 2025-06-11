@@ -1,0 +1,30 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ask Larry</title>
+</head>
+<body>
+    <h1>Ask Larry</h1>
+    <textarea id="question" rows="4" cols="50" placeholder="Ask your question here..."></textarea><br>
+    <button onclick="askLarry()">Ask Larry</button>
+    <p><strong>Larry's Reply:</strong></p>
+    <div id="reply"></div>
+
+    <script>
+    async function askLarry() {
+        const question = document.getElementById("question").value;
+        const response = await fetch("/ask-larry", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ question })
+        });
+        const data = await response.json();
+        document.getElementById("reply").innerText = data.reply;
+    }
+    </script>
+</body>
+</html>
