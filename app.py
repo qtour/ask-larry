@@ -1,11 +1,14 @@
-
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import openai
 import os
 
 app = Flask(__name__)
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+@app.route("/")
+def home():
+    return send_file("ask-larry.html")
 
 @app.route("/ask-larry", methods=["POST"])
 def ask_larry():
