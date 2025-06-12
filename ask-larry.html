@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,32 +25,36 @@
 
         textarea {
             width: 100%;
-            padding: 1em;
-            border-radius: 8px;
+            padding: 1.2em;
+            border-radius: 10px;
             border: 1px solid #ccc;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
             resize: vertical;
-            font-size: 1em;
+            font-size: 1.2em;
             background: rgba(255, 255, 255, 0.95);
             color: #0A3D62;
         }
 
         .buttons {
             display: flex;
-            justify-content: flex-start;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 1em;
             margin-top: 1em;
         }
 
         button {
-            padding: 0.6em 1.2em;
+            padding: 1em 1.4em;
+            font-size: 1.1em;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             background: linear-gradient(to bottom, #A4E786, #59C1C1);
-            box-shadow: 1px 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 2px 3px 6px rgba(0,0,0,0.2);
             cursor: pointer;
             font-weight: bold;
             color: #0A3D62;
+            min-width: 120px;
         }
 
         button:hover {
@@ -67,61 +70,73 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             white-space: pre-wrap;
         }
+
+        #status {
+            margin-top: 0.5em;
+            text-align: center;
+            font-weight: bold;
+            color: #0A3D62;
+        }
+
         @media only screen and (max-width: 600px) {
-    body {
-        padding: 1em;
-        font-size: 1em;
-    }
+            body {
+                padding: 1em;
+                font-size: 1em;
+            }
 
-    h1 {
-        font-size: 1.6em;
-    }
+            h1 {
+                font-size: 1.6em;
+            }
 
-    textarea {
-        font-size: 1em;
-        padding: 0.8em;
-    }
+            textarea {
+                font-size: 1.1em;
+                padding: 1em;
+            }
 
-    .buttons {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5em;
-    }
+            .buttons {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5em;
+            }
 
-    button {
-        width: 100%;
-        font-size: 1em;
-        padding: 0.8em;
-    }
+            button {
+                width: 100%;
+                font-size: 1.1em;
+                padding: 1em;
+            }
 
-    #reply {
-        font-size: 1em;
-        padding: 1em;
-    }
-}
+            #reply {
+                font-size: 1em;
+                padding: 1em;
+            }
+        }
     </style>
 </head>
 <body onload="document.getElementById('question').focus();">
     <h1>Ask Larry</h1>
     <textarea id="question" rows="4" cols="50" placeholder="Ask your question here..."></textarea>
     <div class="buttons">
-        <button onclick="askLarry()">Ask Larry</button>
         <button onclick="startListening()">🎙️ Speak to Larry</button>
+        <button onclick="askLarry()">Ask Larry</button>
     </div>
+    <div id="status"></div>
     <p><strong>Larry's Reply:</strong></p>
     <div id="reply"></div>
-<hr>
-<h3>Upload a photo for Larry:</h3>
-<form id="imageForm" enctype="multipart/form-data">
-    <input type="file" id="imageInput" accept="image/*" capture="environment">
-    <button type="submit">Send to Larry</button>
-</form>
-<p id="uploadStatus"></p>
+
+    <hr>
+    <h3>Upload a photo for Larry:</h3>
+    <form id="imageForm" enctype="multipart/form-data">
+        <input type="file" id="imageInput" accept="image/*" capture="environment">
+        <button type="submit">Send to Larry</button>
+    </form>
+    <p id="uploadStatus"></p>
 
     <script>
         async function askLarry() {
             const question = document.getElementById("question").value;
             const replyDiv = document.getElementById("reply");
+            const status = document.getElementById("status");
+            status.innerText = "";
             replyDiv.innerText = "Larry is thinking...";
 
             try {
@@ -142,6 +157,9 @@
         }
 
         function startListening() {
+            const status = document.getElementById("status");
+            status.innerText = "🎤 Listening...";
+
             const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             recognition.lang = 'en-IE';
             recognition.interimResults = false;
@@ -150,45 +168,50 @@
             recognition.onresult = function(event) {
                 const transcript = event.results[0][0].transcript;
                 document.getElementById("question").value = transcript;
-                askLarry();
+                status.innerText = "Speech captured. Tap 'Ask Larry' to send.";
             };
 
             recognition.onerror = function(event) {
-                alert("Speech recognition error: " + event.error);
+                status.innerText = "Speech recognition error: " + event.error;
+            };
+
+            recognition.onend = function() {
+                if (status.innerText === "🎤 Listening...") {
+                    status.innerText = "No speech detected. Try again.";
+                }
             };
 
             recognition.start();
         }
-    </script>
-    <script>
-document.getElementById("imageForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
 
-    const fileInput = document.getElementById("imageInput");
-    const status = document.getElementById("uploadStatus");
-    status.innerText = "Uploading...";
+        document.getElementById("imageForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
 
-    if (fileInput.files.length === 0) {
-        status.innerText = "Please choose a file first.";
-        return;
-    }
+            const fileInput = document.getElementById("imageInput");
+            const status = document.getElementById("uploadStatus");
+            status.innerText = "Uploading...";
 
-    const formData = new FormData();
-    formData.append("image", fileInput.files[0]);
+            if (fileInput.files.length === 0) {
+                status.innerText = "Please choose a file first.";
+                return;
+            }
 
-    try {
-        const response = await fetch("/upload-image", {
-            method: "POST",
-            body: formData
+            const formData = new FormData();
+            formData.append("image", fileInput.files[0]);
+
+            try {
+                const response = await fetch("/upload-image", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                status.innerText = "Larry got your image: " + data.message;
+            } catch (error) {
+                status.innerText = "Upload failed.";
+                console.error("Image upload error:", error);
+            }
         });
-
-        const data = await response.json();
-        status.innerText = "Larry got your image: " + data.message;
-    } catch (error) {
-        status.innerText = "Upload failed.";
-        console.error("Image upload error:", error);
-    }
-});
-</script>
+    </script>
 </body>
 </html>
