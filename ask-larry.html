@@ -2,111 +2,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">4
-
-<style>
-body {
-    font-family: "Segoe UI", sans-serif;
-    background-color: #f4f4f9;
-    padding: 2em;
-    max-width: 700px;
-    margin: auto;
-    color: #333;
-}
-
-h1 {
-    text-align: center;
-    color: #444;
-    text-shadow: 1px 1px 0 #fff;
-}
-
-textarea {
-    width: 100%;
-    padding: 1em;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-    resize: vertical;
-    font-size: 1em;
-}
-
-button {
-    padding: 0.6em 1.2em;
-    margin-top: 1em;
-    border: none;
-    border-radius: 6px;
-    background: linear-gradient(to bottom, #eee, #ddd);
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-    cursor: pointer;
-    font-weight: bold;
-}
-
-button:hover {
-    background: #ccc;
-}
-
-#reply {
-    margin-top: 1.5em;
-    padding: 1em;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    white-space: pre-wrap;
-}
-</style>
-    
+    <meta charset="UTF-8">
     <title>Ask Larry</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #f4f4f9;
+            background-image: url('background3.png');
+            background-size: cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            padding: 2em;
+            max-width: 750px;
+            margin: auto;
+            color: #0A3D62;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0A3D62;
+            text-shadow: 1px 1px 0 #D9FFF5;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 1em;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+            resize: vertical;
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.95);
+            color: #0A3D62;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: flex-start;
+            gap: 1em;
+            margin-top: 1em;
+        }
+
+        button {
+            padding: 0.6em 1.2em;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(to bottom, #A4E786, #59C1C1);
+            box-shadow: 1px 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            font-weight: bold;
+            color: #0A3D62;
+        }
+
+        button:hover {
+            background: #3AB7B7;
+            color: #fff;
+        }
+
+        #reply {
+            margin-top: 1.5em;
+            padding: 1em;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            white-space: pre-wrap;
+        }
+    </style>
 </head>
-<body>
+<body onload="document.getElementById('question').focus();">
     <h1>Ask Larry</h1>
-    <textarea id="question" rows="4" cols="50" placeholder="Ask your question here..."></textarea><br>
-    <button onclick="askLarry()">Ask Larry</button>
+    <textarea id="question" rows="4" cols="50" placeholder="Ask your question here..."></textarea>
+    <div class="buttons">
+        <button onclick="askLarry()">Ask Larry</button>
+        <button onclick="startListening()">🎙️ Speak to Larry</button>
+    </div>
     <p><strong>Larry's Reply:</strong></p>
     <div id="reply"></div>
 
-    <button onclick="startListening()">🎙️ Speak to Larry</button>
-    
-<script>
-async function askLarry() {
-    const question = document.getElementById("question").value;
-    const replyDiv = document.getElementById("reply");
-    replyDiv.innerText = "Larry is thinking...";
+    <script>
+        async function askLarry() {
+            const question = document.getElementById("question").value;
+            const replyDiv = document.getElementById("reply");
+            replyDiv.innerText = "Larry is thinking...";
 
-    try {
-        const response = await fetch("/ask-larry", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ question })
-        });
+            try {
+                const response = await fetch("/ask-larry", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ question })
+                });
 
-        const data = await response.json();
-        replyDiv.innerText = data.reply;
-    } catch (error) {
-        replyDiv.innerText = "Oops! Something went wrong.";
-        console.error("Error talking to Larry:", error);
-    }
-}
+                const data = await response.json();
+                replyDiv.innerText = data.reply;
+            } catch (error) {
+                replyDiv.innerText = "Oops! Something went wrong.";
+                console.error("Error talking to Larry:", error);
+            }
+        }
 
-function startListening() {
-    const recognition = new webkitSpeechRecognition() || new SpeechRecognition();
-    recognition.lang = 'en-IE'; // Irish English
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+        function startListening() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-IE';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
 
-    recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        document.getElementById("question").value = transcript;
-        askLarry();
-    };
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById("question").value = transcript;
+                askLarry();
+            };
 
-    recognition.onerror = function(event) {
-        alert("Speech recognition error: " + event.error);
-    };
+            recognition.onerror = function(event) {
+                alert("Speech recognition error: " + event.error);
+            };
 
-    recognition.start();
-}
-</script>
+            recognition.start();
+        }
+    </script>
 </body>
 </html>
