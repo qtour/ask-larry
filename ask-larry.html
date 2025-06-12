@@ -110,6 +110,13 @@
     </div>
     <p><strong>Larry's Reply:</strong></p>
     <div id="reply"></div>
+<hr>
+<h3>Upload a photo for Larry:</h3>
+<form id="imageForm" enctype="multipart/form-data">
+    <input type="file" id="imageInput" accept="image/*" capture="environment">
+    <button type="submit">Send to Larry</button>
+</form>
+<p id="uploadStatus"></p>
 
     <script>
         async function askLarry() {
@@ -153,5 +160,35 @@
             recognition.start();
         }
     </script>
+    <script>
+document.getElementById("imageForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const fileInput = document.getElementById("imageInput");
+    const status = document.getElementById("uploadStatus");
+    status.innerText = "Uploading...";
+
+    if (fileInput.files.length === 0) {
+        status.innerText = "Please choose a file first.";
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", fileInput.files[0]);
+
+    try {
+        const response = await fetch("/upload-image", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+        status.innerText = "Larry got your image: " + data.message;
+    } catch (error) {
+        status.innerText = "Upload failed.";
+        console.error("Image upload error:", error);
+    }
+});
+</script>
 </body>
 </html>
