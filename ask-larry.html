@@ -67,6 +67,38 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             white-space: pre-wrap;
         }
+        @media only screen and (max-width: 600px) {
+    body {
+        padding: 1em;
+        font-size: 1em;
+    }
+
+    h1 {
+        font-size: 1.6em;
+    }
+
+    textarea {
+        font-size: 1em;
+        padding: 0.8em;
+    }
+
+    .buttons {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5em;
+    }
+
+    button {
+        width: 100%;
+        font-size: 1em;
+        padding: 0.8em;
+    }
+
+    #reply {
+        font-size: 1em;
+        padding: 1em;
+    }
+}
     </style>
 </head>
 <body onload="document.getElementById('question').focus();">
