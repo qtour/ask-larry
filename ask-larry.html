@@ -123,19 +123,23 @@
       }
     };
 
-    function submitQuestion(text) {
+    async function submitQuestion(text) {
       responseBox.innerHTML = `<em>Thinking...</em>`;
-      // Simulated Larry response for demo
-      setTimeout(() => {
-        const larryResponse = larryStyleResponse(text);
+      try {
+        const res = await fetch('https://ask-larry.onrender.com/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: text })
+        });
+
+        const data = await res.json();
+        const larryResponse = data.response || 'Sorry, Larry had trouble answering that.';
         responseBox.innerText = larryResponse;
         speak(larryResponse);
-      }, 1000);
-    }
-
-    function larryStyleResponse(question) {
-      // Natural, confident Irish tone (no "Ah sure")
-      return `Alright, let’s look at that. ${question.trim()} — here’s how we’d go about solving it... (explanation would follow here)`;
+      } catch (error) {
+        console.error('Error asking Larry:', error);
+        responseBox.innerText = 'There was an error getting Larry’s response.';
+      }
     }
 
     function speak(text) {
