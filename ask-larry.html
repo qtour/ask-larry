@@ -1,217 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Ask Larry</title>
-    <style>
-        body {
-            font-family: "Segoe UI", sans-serif;
-            background: #f4f4f9;
-            background-image: url('background3.png');
-            background-size: cover;
-            background-attachment: fixed;
-            background-repeat: no-repeat;
-            padding: 2em;
-            max-width: 750px;
-            margin: auto;
-            color: #0A3D62;
-        }
-
-        h1 {
-            text-align: center;
-            color: #0A3D62;
-            text-shadow: 1px 1px 0 #D9FFF5;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 1.2em;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-            resize: vertical;
-            font-size: 1.2em;
-            background: rgba(255, 255, 255, 0.95);
-            color: #0A3D62;
-        }
-
-        .buttons {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 1em;
-            margin-top: 1em;
-        }
-
-        button {
-            padding: 1em 1.4em;
-            font-size: 1.1em;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(to bottom, #A4E786, #59C1C1);
-            box-shadow: 2px 3px 6px rgba(0,0,0,0.2);
-            cursor: pointer;
-            font-weight: bold;
-            color: #0A3D62;
-            min-width: 120px;
-        }
-
-        button:hover {
-            background: #3AB7B7;
-            color: #fff;
-        }
-
-        #reply {
-            margin-top: 1.5em;
-            padding: 1em;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            white-space: pre-wrap;
-        }
-
-        #status {
-            margin-top: 0.5em;
-            text-align: center;
-            font-weight: bold;
-            color: #0A3D62;
-        }
-
-        @media only screen and (max-width: 600px) {
-            body {
-                padding: 1em;
-                font-size: 1em;
-            }
-
-            h1 {
-                font-size: 1.6em;
-            }
-
-            textarea {
-                font-size: 1.1em;
-                padding: 1em;
-            }
-
-            .buttons {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.5em;
-            }
-
-            button {
-                width: 100%;
-                font-size: 1.1em;
-                padding: 1em;
-            }
-
-            #reply {
-                font-size: 1em;
-                padding: 1em;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ask Larry</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    textarea, input[type="file"] {
+      width: 100%;
+      font-size: 1.2rem;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      font-size: 1.2rem;
+      padding: 0.5rem 1rem;
+      margin-right: 1rem;
+      border-radius: 10px;
+      border: none;
+      background-color: #4caf50;
+      color: white;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+    #listening-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+      margin-left: 10px;
+      visibility: hidden;
+    }
+    #response {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
-<body onload="document.getElementById('question').focus();">
-    <h1>Ask Larry</h1>
-    <textarea id="question" rows="4" cols="50" placeholder="Ask your question here..."></textarea>
-    <div class="buttons">
-        <button onclick="startListening()">🎙️ Speak to Larry</button>
-        <button onclick="askLarry()">Ask Larry</button>
-    </div>
-    <div id="status"></div>
-    <p><strong>Larry's Reply:</strong></p>
-    <div id="reply"></div>
+<body>
+  <h1>Ask Larry</h1>
+  <textarea id="question" rows="3" placeholder="Type your question here or use the mic..."></textarea>
+  <input type="file" id="image-upload" accept="image/*" />
+  <br />
+  <button id="speak-button">🎤 Speak</button>
+  <button id="submit-button">Ask Larry</button>
+  <span id="listening-indicator"></span>
+  <div id="response"></div>
 
-    <hr>
-    <h3>Upload a photo for Larry:</h3>
-    <form id="imageForm" enctype="multipart/form-data">
-        <input type="file" id="imageInput" accept="image/*" capture="environment">
-        <button type="submit">Send to Larry</button>
-    </form>
-    <p id="uploadStatus"></p>
+  <script>
+    const speakButton = document.getElementById('speak-button');
+    const submitButton = document.getElementById('submit-button');
+    const questionBox = document.getElementById('question');
+    const responseBox = document.getElementById('response');
+    const listeningIndicator = document.getElementById('listening-indicator');
 
-    <script>
-        async function askLarry() {
-            const question = document.getElementById("question").value;
-            const replyDiv = document.getElementById("reply");
-            const status = document.getElementById("status");
-            status.innerText = "";
-            replyDiv.innerText = "Larry is thinking...";
+    const synth = window.speechSynthesis;
 
-            try {
-                const response = await fetch("/ask-larry", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ question })
-                });
+    let recognizing = false;
+    let finalTranscript = '';
 
-                const data = await response.json();
-                replyDiv.innerText = data.reply;
-            } catch (error) {
-                replyDiv.innerText = "Oops! Something went wrong.";
-                console.error("Error talking to Larry:", error);
-            }
+    if ('webkitSpeechRecognition' in window) {
+      const recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IE';
+
+      recognition.onstart = () => {
+        recognizing = true;
+        listeningIndicator.style.visibility = 'visible';
+        questionBox.value = '';
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event);
+        recognizing = false;
+        listeningIndicator.style.visibility = 'hidden';
+      };
+
+      recognition.onend = () => {
+        recognizing = false;
+        listeningIndicator.style.visibility = 'hidden';
+        submitQuestion(finalTranscript);
+      };
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
         }
+        questionBox.value = finalTranscript + interimTranscript;
+      };
 
-        function startListening() {
-            const status = document.getElementById("status");
-            status.innerText = "🎤 Listening...";
+      speakButton.onclick = () => {
+        finalTranscript = '';
+        recognition.start();
+      };
+    } else {
+      speakButton.disabled = true;
+      alert('Speech Recognition not supported in this browser.');
+    }
 
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = 'en-IE';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
+    submitButton.onclick = () => {
+      const question = questionBox.value;
+      if (question.trim() !== '') {
+        submitQuestion(question);
+      }
+    };
 
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById("question").value = transcript;
-                status.innerText = "Speech captured. Tap 'Ask Larry' to send.";
-            };
+    function submitQuestion(text) {
+      responseBox.innerHTML = `<em>Thinking...</em>`;
+      // Simulated Larry response for demo
+      setTimeout(() => {
+        const larryResponse = larryStyleResponse(text);
+        responseBox.innerText = larryResponse;
+        speak(larryResponse);
+      }, 1000);
+    }
 
-            recognition.onerror = function(event) {
-                status.innerText = "Speech recognition error: " + event.error;
-            };
+    function larryStyleResponse(question) {
+      // Natural, confident Irish tone (no "Ah sure")
+      return `Alright, let’s look at that. ${question.trim()} — here’s how we’d go about solving it... (explanation would follow here)`;
+    }
 
-            recognition.onend = function() {
-                if (status.innerText === "🎤 Listening...") {
-                    status.innerText = "No speech detected. Try again.";
-                }
-            };
-
-            recognition.start();
-        }
-
-        document.getElementById("imageForm").addEventListener("submit", async function(e) {
-            e.preventDefault();
-
-            const fileInput = document.getElementById("imageInput");
-            const status = document.getElementById("uploadStatus");
-            status.innerText = "Uploading...";
-
-            if (fileInput.files.length === 0) {
-                status.innerText = "Please choose a file first.";
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("image", fileInput.files[0]);
-
-            try {
-                const response = await fetch("/upload-image", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const data = await response.json();
-                status.innerText = "Larry got your image: " + data.message;
-            } catch (error) {
-                status.innerText = "Upload failed.";
-                console.error("Image upload error:", error);
-            }
-        });
-    </script>
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-IE';
+      synth.speak(utterance);
+    }
+  </script>
 </body>
 </html>
