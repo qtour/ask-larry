@@ -1,55 +1,73 @@
-
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import pytesseract
+from PIL import Image
 import os
-from openai import OpenAI
-from werkzeug.utils import secure_filename
+import openai
 
 app = Flask(__name__)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+CORS(app)
 
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-@app.route("/")
-def home():
-    return send_file("ask-larry.html")
+# Set your OpenAI key
+openai.api_key = os.getenv("OPENAI_API_KEY")  # or replace with actual key for testing
 
-@app.route("/ask-larry", methods=["POST"])
-def ask_larry():
-    data = request.get_json()
-    question = data.get("question", "")
-
-    prompt = f"""
-You are 'Larry', a cabinet maker turned psychology graduate who helps young adults in the trades with practical maths.
-You're Irish, warm, non-condescending, and explain things clearly using the metric system only.
-Keep answers short, visual if needed, and tied to practical, on-the-job scenarios.
-
-Here's the question: {question}
-"""
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are Ask Larry, a helpful maths tutor for apprentices. Speak with natural Irish tone, and avoid Americanisms."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return jsonify({"reply": response.choices[0].message.content})
-    except Exception as e:
-        return jsonify({"reply": f"Oops! Larry ran into a problem: {str(e)}"}), 500
-
-@app.route("/upload-image", methods=["POST"])
+@app.route('/upload', methods=['POST'])
 def upload_image():
-    if "image" not in request.files:
-        return jsonify({"message": "No file part"}), 400
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image uploaded'}), 400
 
-    file = request.files["image"]
-    if file.filename == "":
-        return jsonify({"message": "No selected file"}), 400
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
 
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(filepath)
 
-    return jsonify({"message": f"Image saved as {filename}."})
+    try:
+        image = Image.open(filepath)
+        raw_text = pytesseract.image_to_string(image)
+        clean_text = raw_text.strip().replace('\n', ' ')
+
+        larry_response = f"Alright, let's look at this: '{clean_text}'\nHere's how we'd tackle it step by step... (This is where Larry's explanation will go)"
+        return jsonify({'question': clean_text, 'larry_response': larry_response})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ask', methods=['POST'])
+def ask_larry():
+    data = request.get_json()
+    question = data.get('question', '')
+
+    if not question:
+        return jsonify({'response': 'No question received.'})
+
+    try:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are Larry, a warm, practical, non-judgmental Irish tradesman turned math tutor. "
+                    "Explain things simply and clearly using metric units only. Be friendly and encouraging."
+                )
+            },
+            {"role": "user", "content": question}
+        ]
+
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=messages,
+            temperature=0.7
+        )
+
+        answer = response.choices[0].message.content.strip()
+        return jsonify({'response': answer})
+
+    except Exception as e:
+        return jsonify({'response': f'Error: {str(e)}'})
+
+if __name__ == '__main__':
+    app.run(debug=True)
