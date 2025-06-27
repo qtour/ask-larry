@@ -9,8 +9,12 @@ CORS(app)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route('/')
-def index():
+def root():
     return send_from_directory('.', 'ask-larry.html')
+
+@app.route('/<path:filename>')
+def static_file(filename):
+    return send_from_directory('.', filename)
 
 @app.route('/ask', methods=['POST'])
 def ask_larry():
