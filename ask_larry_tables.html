@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplication Table - Ask Larry</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 10px;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    .mc-container {
+      max-width: 1000px;
+      margin: auto;
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .multiplication-results {
+      text-align: center;
+      font-size: 1.5em;
+      font-weight: bold;
+      margin-bottom: 20px;
+      background-color: #e0f7fa;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow-x: auto;
+      display: block;
+    }
+    td {
+      border: 1px solid #ccc;
+      text-align: center;
+      padding: 10px;
+      min-width: 50px;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    td:hover {
+      background-color: #f1f8e9;
+    }
+    .header {
+      background-color: #eeeeee;
+      font-weight: bold;
+    }
+    .highlighted {
+      background-color: #c8e6c9 !important;
+    }
+    .mc-footer {
+      text-align: center;
+      font-size: 0.9em;
+      color: #777;
+      margin-top: 20px;
+    }
+    #tooltip {
+      position: absolute;
+      display: none;
+      background: #333;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    @media (max-width: 600px) {
+      td {
+        padding: 6px;
+        font-size: 0.75em;
+        min-width: 35px;
+      }
+      .multiplication-results {
+        font-size: 1.2em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mc-container">
+    <div id="result" class="multiplication-results">Click any cell to see the result</div>
+    <div id="tooltip"></div>
+    <table id="multiplication-table"></table>
+    <div class="mc-footer">
+      <p>&copy; Ask Larry - Helping You Learn Without the Rote</p>
+    </div>
+  </div>
+
+  <script>
+    const table = document.getElementById("multiplication-table");
+    const resultDisplay = document.getElementById("result");
+    const size = 12;
+
+    function clearHighlights() {
+      const cells = table.querySelectorAll("td");
+      cells.forEach(cell => cell.classList.remove("highlighted"));
+    }
+
+    function highlightRowCol(rowNum, colNum) {
+      const rows = table.rows;
+      for (let i = 1; i <= size; i++) {
+        rows[i].cells[colNum].classList.add("highlighted");
+        rows[rowNum].cells[i].classList.add("highlighted");
+      }
+      rows[rowNum].cells[colNum].classList.add("highlighted");
+    }
+
+    function createTable() {
+      for (let i = 0; i <= size; i++) {
+        const row = document.createElement("tr");
+        for (let j = 0; j <= size; j++) {
+          const cell = document.createElement("td");
+          if (i === 0 && j === 0) {
+            cell.innerText = "X";
+            cell.classList.add("header");
+          } else if (i === 0 || j === 0) {
+            cell.innerText = i === 0 ? j : i;
+            cell.classList.add("header");
+          } else {
+            cell.innerText = i * j;
+            cell.dataset.row = i;
+            cell.dataset.col = j;
+
+            cell.addEventListener("click", () => {
+              clearHighlights();
+              highlightRowCol(i, j);
+              resultDisplay.innerText = `${i} × ${j} = ${i * j}`;
+            });
+
+            // Hover tooltip for desktop
+            let hoverTimeout;
+            cell.addEventListener("mouseenter", (e) => {
+              if (window.innerWidth > 768) {
+                hoverTimeout = setTimeout(() => {
+                  const tooltip = document.getElementById("tooltip");
+                  tooltip.innerText = `${i} × ${j} = ${i * j}`;
+                  tooltip.style.left = `${e.pageX + 10}px`;
+                  tooltip.style.top = `${e.pageY + 10}px`;
+                  tooltip.style.display = "block";
+                }, 1000);
+              }
+            });
+
+            cell.addEventListener("mouseleave", () => {
+              clearTimeout(hoverTimeout);
+              const tooltip = document.getElementById("tooltip");
+              tooltip.style.display = "none";
+            });
+          }
+          row.appendChild(cell);
+        }
+        table.appendChild(row);
+      }
+    }
+
+    createTable();
+  </script>
+</body>
+</html>
