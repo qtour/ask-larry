@@ -1,41 +1,16 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import pytesseract
-from PIL import Image
-import os
 from openai import OpenAI
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Set up OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-@app.route('/upload', methods=['POST'])
-def upload_image():
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image uploaded'}), 400
-
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-
-    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(filepath)
-
-    try:
-        image = Image.open(filepath)
-        raw_text = pytesseract.image_to_string(image)
-        clean_text = raw_text.strip().replace('\n', ' ')
-
-        larry_response = f"Alright, let's look at this: '{clean_text}'\nHere's how we'd tackle it step by step... (This is where Larry's explanation will go)"
-        return jsonify({'question': clean_text, 'larry_response': larry_response})
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/')
+def index():
+    return send_from_directory('.', 'ask-larry.html')
 
 @app.route('/ask', methods=['POST'])
 def ask_larry():
