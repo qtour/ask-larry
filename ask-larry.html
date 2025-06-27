@@ -57,8 +57,6 @@
   <button id="submit-button">Ask Larry</button>
   <span id="listening-indicator"></span>
   <div id="response"></div>
-  
-  fetch("https://ask-larry.onrender.com/ask", ...)
 
   <script>
     const speakButton = document.getElementById('speak-button');
@@ -91,64 +89,4 @@
       };
 
       recognition.onend = () => {
-        recognizing = false;
-        listeningIndicator.style.visibility = 'hidden';
-        submitQuestion(finalTranscript);
-      };
-
-      recognition.onresult = (event) => {
-        let interimTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        questionBox.value = finalTranscript + interimTranscript;
-      };
-
-      speakButton.onclick = () => {
-        finalTranscript = '';
-        recognition.start();
-      };
-    } else {
-      speakButton.disabled = true;
-      alert('Speech Recognition not supported in this browser.');
-    }
-
-    submitButton.onclick = () => {
-      const question = questionBox.value;
-      if (question.trim() !== '') {
-        submitQuestion(question);
-      }
-    };
-
-    async function submitQuestion(text) {
-      responseBox.innerHTML = `<em>Thinking...</em>`;
-      try {
-        const res = await fetch('https://ask-larry.onrender.com/ask', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: text })
-        });
-
-        const data = await res.json();
-        const larryResponse = data.response || 'Sorry, Larry had trouble answering that.';
-        responseBox.innerText = larryResponse;
-        speak(larryResponse);
-      } catch (error) {
-        console.error('Error asking Larry:', error);
-        responseBox.innerText = 'There was an error getting Larry’s response.';
-      }
-    }
-
-    function speak(text) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-IE';
-      synth.speak(utterance);
-    }
-  </script>
-</body>
-</html>
+        recognizing = fal
