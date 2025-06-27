@@ -1,45 +1,151 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from openai import OpenAI
-import os
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ask Larry</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    textarea, input[type="file"] {
+      width: 100%;
+      font-size: 1.2rem;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      font-size: 1.2rem;
+      padding: 0.5rem 1rem;
+      margin-right: 1rem;
+      border-radius: 10px;
+      border: none;
+      background-color: #4caf50;
+      color: white;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+    #listening-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+      margin-left: 10px;
+      visibility: hidden;
+    }
+    #response {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Ask Larry</h1>
+  <textarea id="question" rows="3" placeholder="Type your question here or use the mic..."></textarea>
+  <input type="file" id="image-upload" accept="image/*" />
+  <br />
+  <button id="speak-button">🎤 Speak</button>
+  <button id="submit-button">Ask Larry</button>
+  <span id="listening-indicator"></span>
+  <div id="response"></div>
 
-app = Flask(__name__)
-CORS(app)
+  <script>
+    const speakButton = document.getElementById('speak-button');
+    const submitButton = document.getElementById('submit-button');
+    const questionBox = document.getElementById('question');
+    const responseBox = document.getElementById('response');
+    const listeningIndicator = document.getElementById('listening-indicator');
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    const synth = window.speechSynthesis;
+    let recognizing = false;
+    let finalTranscript = '';
 
-@app.route('/')
-def index():
-    return send_from_directory('.', 'ask-larry.html')
+    if ('webkitSpeechRecognition' in window) {
+      const recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IE';
 
-@app.route('/ask', methods=['POST'])
-def ask_larry():
-    data = request.get_json()
-    question = data.get('question', '')
+      recognition.onstart = () => {
+        recognizing = true;
+        listeningIndicator.style.visibility = 'visible';
+        questionBox.value = '';
+      };
 
-    if not question:
-        return jsonify({'response': 'No question received.'})
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event);
+        recognizing = false;
+        listeningIndicator.style.visibility = 'hidden';
+      };
 
-    try:
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are Larry, a warm, practical, non-judgmental Irish tradesman turned math tutor. "
-                    "Explain things simply and clearly using metric units only. Be friendly and encouraging."
-                )
-            },
-            {"role": "user", "content": question}
-        ]
+      recognition.onend = () => {
+        recognizing = false;
+        listeningIndicator.style.visibility = 'hidden';
+        submitQuestion(finalTranscript);
+      };
 
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            temperature=0.7
-        )
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        questionBox.value = finalTranscript + interimTranscript;
+      };
 
-        answer = response.choices[0].message.content.strip()
-        return jsonify({'response': answer})
+      speakButton.onclick = () => {
+        finalTranscript = '';
+        recognition.start();
+      };
+    } else {
+      speakButton.disabled = true;
+      alert('Speech Recognition not supported in this browser.');
+    }
 
-    except Exception as e:
-        return jsonify({'response': f'Error: {str(e)}'})
+    submitButton.onclick = () => {
+      const question = questionBox.value;
+      if (question.trim() !== '') {
+        submitQuestion(question);
+      }
+    };
+
+    async function submitQuestion(text) {
+      responseBox.innerHTML = `<em>Thinking...</em>`;
+      try {
+        const res = await fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: text })
+        });
+
+        const data = await res.json();
+        const larryResponse = data.response || 'Sorry, Larry had trouble answering that.';
+        responseBox.innerText = larryResponse;
+        speak(larryResponse);
+      } catch (error) {
+        console.error('Error asking Larry:', error);
+        responseBox.innerText = 'There was an error getting Larry’s response.';
+      }
+    }
+
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-IE';
+      synth.speak(utterance);
+    }
+  </script>
+</body>
+</html>
