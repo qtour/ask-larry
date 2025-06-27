@@ -3,7 +3,7 @@ from flask_cors import CORS
 import pytesseract
 from PIL import Image
 import os
-import openai
+from openai import OpenAI
 
 app = Flask(__name__)
 CORS(app)
@@ -11,8 +11,8 @@ CORS(app)
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Set your OpenAI key
-openai.api_key = os.getenv("OPENAI_API_KEY")  # or replace with actual key for testing
+# Set up OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
@@ -57,7 +57,7 @@ def ask_larry():
             {"role": "user", "content": question}
         ]
 
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=messages,
             temperature=0.7
